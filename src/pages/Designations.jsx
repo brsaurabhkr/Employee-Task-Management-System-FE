@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 
 const designationOptions = [
   "Admin",
@@ -11,44 +12,35 @@ const designationOptions = [
 
 const Designation = () => {
   const [showForm, setShowForm] = useState(false);
-  const [designationName, setDesignationName] = useState("");
-  const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("Active");
   const [search, setSearch] = useState("");
   const [editId, setEditId] = useState(null);
-
   const [designations, setDesignations] = useState([
     { id: 1, name: "Admin", description: "System Administrator", status: "Active" },
     { id: 2, name: "HR", description: "Human Resource Department", status: "Active" },
     { id: 3, name: "Nurse", description: "Patient Care", status: "Inactive" },
   ]);
 
-  const resetForm = () => {
-    setDesignationName("");
-    setDescription("");
-    setStatus("Active");
-    setEditId(null);
-  };
+  const { register, handleSubmit, reset, setValue } = useForm({
+    defaultValues: {
+      name: "",
+      description: "",
+      status: "Active",
+    },
+  });
 
   const handleOpenAddModal = () => {
-    resetForm();
+    reset({ name: "", description: "", status: "Active" });
+    setEditId(null);
     setShowForm(true);
   };
 
   const handleCloseModal = () => {
-    resetForm();
     setShowForm(false);
   };
 
-  const handleSaveDesignation = (e) => {
-    e.preventDefault();
-    if (!designationName) {
-      alert("Please select a designation");
-      return;
-    }
-
+  const onSubmit = (data) => {
     const exists = designations.some(
-      (item) => item.name.toLowerCase() === designationName.toLowerCase() && item.id !== editId
+      (item) => item.name.toLowerCase() === data.name.toLowerCase() && item.id !== editId
     );
 
     if (exists) {
@@ -59,21 +51,21 @@ const Designation = () => {
     if (editId !== null) {
       setDesignations(
         designations.map((item) =>
-          item.id === editId ? { ...item, name: designationName, description, status } : item
+          item.id === editId ? { ...item, ...data } : item
         )
       );
     } else {
       const nextId = designations.length > 0 ? Math.max(...designations.map((item) => item.id)) + 1 : 1;
-      setDesignations([...designations, { id: nextId, name: designationName, description, status }]);
+      setDesignations([...designations, { id: nextId, ...data }]);
     }
     handleCloseModal();
   };
 
   const handleEdit = (item) => {
     setEditId(item.id);
-    setDesignationName(item.name);
-    setDescription(item.description);
-    setStatus(item.status);
+    setValue("name", item.name);
+    setValue("description", item.description);
+    setValue("status", item.status);
     setShowForm(true);
   };
 
@@ -89,14 +81,12 @@ const Designation = () => {
 
   return (
     <div className="bg-gray-100 min-h-screen p-4 md:p-6">
-      {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Designation Management</h1>
         <p className="text-gray-500 text-sm">Manage employee designations for your organization.</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-md border p-4 md:p-6">
-        {/* Header Section (Search & Add Button) */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-5">
           <h2 className="text-xl font-semibold">Designation List</h2>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -124,13 +114,13 @@ const Designation = () => {
                 <h2 className="text-xl font-semibold">{editId !== null ? "Edit Designation" : "Add Designation"}</h2>
                 <button onClick={handleCloseModal} className="text-2xl hover:text-gray-600">&times;</button>
               </div>
-              <form onSubmit={handleSaveDesignation} className="space-y-4">
-                <select value={designationName} onChange={(e) => setDesignationName(e.target.value)} className="w-full border rounded-lg px-4 py-3">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <select {...register("name", { required: true })} className="w-full border rounded-lg px-4 py-3">
                   <option value="">Select Designation</option>
                   {designationOptions.map((item) => <option key={item} value={item}>{item}</option>)}
                 </select>
-                <textarea rows="4" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Enter description" className="w-full border rounded-lg px-4 py-3" />
-                <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full border rounded-lg px-4 py-3">
+                <textarea {...register("description")} rows="4" placeholder="Enter description" className="w-full border rounded-lg px-4 py-3" />
+                <select {...register("status")} className="w-full border rounded-lg px-4 py-3">
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                 </select>
@@ -143,68 +133,49 @@ const Designation = () => {
           </div>
         )}
 
-        {/* Responsive Table */}
+        {/* Table/List View */}
         <div className="space-y-4 md:hidden">
-          {filteredData.length > 0 ? (
-            filteredData.map((item) => (
-              <div key={item.id} className="rounded-2xl border border-gray-200 bg-slate-50 p-4 shadow-sm">
-                <div className="flex items-center justify-between gap-4 mb-3">
-                  <div>
-                    <h3 className="text-lg font-semibold">{item.name}</h3>
-                    <p className="text-sm text-gray-500">ID: {item.id}</p>
-                  </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.status === "Active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                    {item.status}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mb-4">{item.description}</p>
-                <div className="flex flex-wrap gap-3">
-                  <button onClick={() => handleEdit(item)} className="text-blue-600 hover:underline">Edit</button>
-                  <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:underline">Delete</button>
-                </div>
+          {filteredData.map((item) => (
+            <div key={item.id} className="rounded-2xl border border-gray-200 bg-slate-50 p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <h3 className="text-lg font-semibold">{item.name}</h3>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.status === "Active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{item.status}</span>
               </div>
-            ))
-          ) : (
-            <div className="rounded-2xl border border-gray-200 bg-slate-50 p-6 text-center text-gray-500">No Designations Found</div>
-          )}
+              <p className="text-sm text-gray-600 mb-4">{item.description}</p>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={() => handleEdit(item)} className="text-blue-600 hover:underline">Edit</button>
+                <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:underline">Delete</button>
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="hidden md:block overflow-x-auto -mx-4 md:mx-0">
           <table className="w-full min-w-full">
             <thead className="bg-gray-100">
               <tr>
-                <th className="p-4 text-left whitespace-nowrap">ID</th>
-                <th className="p-4 text-left whitespace-nowrap">Designation</th>
-                <th className="p-4 text-left whitespace-nowrap">Description</th>
-                <th className="p-4 text-center whitespace-nowrap">Status</th>
-                <th className="p-4 text-center whitespace-nowrap">Actions</th>
+                <th className="p-4 text-left">ID</th>
+                <th className="p-4 text-left">Designation</th>
+                <th className="p-4 text-left">Description</th>
+                <th className="p-4 text-center">Status</th>
+                <th className="p-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredData.length > 0 ? (
-                filteredData.map((item) => (
-                  <tr key={item.id} className="border-b hover:bg-gray-50">
-                    <td className="p-4">{item.id}</td>
-                    <td className="p-4 font-medium">{item.name}</td>
-                    <td className="p-4 text-gray-600">{item.description}</td>
-                    <td className="p-4 text-center">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${item.status === "Active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center">
-                      <div className="flex justify-center gap-3">
-                        <button onClick={() => handleEdit(item)} className="text-blue-600 hover:underline">Edit</button>
-                        <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:underline">Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="p-6 text-center text-gray-500">No Designations Found</td>
+              {filteredData.map((item) => (
+                <tr key={item.id} className="border-b hover:bg-gray-50">
+                  <td className="p-4">{item.id}</td>
+                  <td className="p-4 font-medium">{item.name}</td>
+                  <td className="p-4 text-gray-600">{item.description}</td>
+                  <td className="p-4 text-center">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${item.status === "Active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{item.status}</span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <button onClick={() => handleEdit(item)} className="text-blue-600 hover:underline mx-2">Edit</button>
+                    <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:underline mx-2">Delete</button>
+                  </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>

@@ -79,12 +79,14 @@ const Login = () => {
             </Link>
             {loginError && <p className="text-red-500 text-sm">{loginError}</p>}
           </div>
-
-          <button
-            type="submit"            
-          >
-            Login
-          </button>          
+          <div class="flex justify-center">
+            <button
+              type="submit"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition"
+            >
+              Login
+            </button>
+          </div>
           <p className="text-center">
             Don't have an account? <Link to="/register" className="text-blue-600 hover:underline">Register here</Link>
           </p>
